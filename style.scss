@@ -1,0 +1,28 @@
+$primary-color: #0d6efd;
+$bg-color: #121212;
+$text-color: #ffffff;
+
+body {
+  background-color: $bg-color;
+  color: $text-color;
+  font-family: 'Arial', sans-serif;
+}
+
+.assistant-box {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.2);
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: rgba(255,255,255,0.1);
+    transform: scale(1.02);
+  }
+}
+
+button {
+  background-color: $primary-color;
+  border: none;
+  &:hover {
+    background-color: darken($primary-color, 10%);
+  }
+}
