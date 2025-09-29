@@ -1,53 +1,68 @@
-const startBtn = document.getElementById('start-btn');
-const responseEl = document.getElementById('response');
+const chatBox = document.getElementById("chat-box");
+const userInput = document.getElementById("user-input");
+const sendBtn = document.getElementById("send-btn");
+const voiceBtn = document.getElementById("voice-btn");
 
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-const recognition = new SpeechRecognition();
+let voiceEnabled = true;
 
-recognition.lang = 'en-US';
-recognition.interimResults = false;
-recognition.continuous = false;
+// Add message to chat
+function addMessage(content, sender) {
+  const msg = document.createElement("div");
+  msg.className = "message " + (sender === "user" ? "user-message" : "david-message");
+  msg.textContent = content;
+  chatBox.appendChild(msg);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
 
-startBtn.addEventListener('click', () => {
-  recognition.start();
-  responseEl.textContent = "Listening...";
-});
-
-recognition.addEventListener('result', (e) => {
-  const command = e.results[0][0].transcript.toLowerCase();
-  handleCommand(command);
-});
-
+// Speech Synthesis
 function speak(text) {
+  if(!voiceEnabled) return;
   const synth = window.speechSynthesis;
   const utterance = new SpeechSynthesisUtterance(text);
   synth.speak(utterance);
-  responseEl.textContent = text;
 }
 
-function handleCommand(command) {
-  console.log('Command:', command);
+// Ask AI backend
+async function askDavid(question) {
+  addMessage(question, "user");
 
-  // Basic commands
-  if(command.includes('hello') || command.includes('hi')) {
-    speak("Hello! How can I help you today?");
-  } 
-  else if(command.includes('your name')) {
-    speak("I am David, your voice assistant.");
-  } 
-  else if(command.includes('open youtube')) {
-    speak("Opening YouTube");
-    window.open("https://www.youtube.com", "_blank");
-  } 
-  else if(command.includes('open google')) {
-    speak("Opening Google");
-    window.open("https://www.google.com", "_blank");
-  } 
-  else if(command.includes('back')) {
-    speak("Going back");
-    window.history.back();
-  } 
-  else {
-    speak("Sorry, I didn't understand that.");
+  try {
+    const response = await fetch("/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: question })
+    });
+
+    const answer = await response.text();
+    addMessage(answer, "david");
+    speak(answer);
+  } catch(err) {
+    addMessage("Sorry, AI backend error!", "david");
   }
 }
+
+// Send button
+sendBtn.addEventListener("click", () => {
+  const question = userInput.value.trim();
+  if(question) {
+    askDavid(question);
+    userInput.value = "";
+  }
+});
+
+// Enter key
+userInput.addEventListener("keypress", (e) => {
+  if(e.key === "Enter") sendBtn.click();
+});
+
+// Voice recognition
+const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+recognition.lang = "en-US";
+recognition.interimResults = false;
+
+voiceBtn.addEventListener("click", () => recognition.start());
+
+recognition.addEventListener("result", (e) => {
+  const text = e.results[0][0].transcript;
+  askDavid(text);
+});
